@@ -70,8 +70,8 @@ configuration configuration null
 ```
 Аттрибуты полей кастомных типов
 - string(255 byte) имя поля - ascii
-- bit nullability
 - string название типа
+- bit nullability
 - byte номер в лейауте в файле 
 
 ### Type definition files
