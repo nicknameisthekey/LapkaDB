@@ -38,3 +38,54 @@ Experimental DB to learn core concepts
 # Миграции и "изменения" данных
 - миграция может только добавлять необязательные поля
 - возможность "изменить" данные путем добавления новой (специальной) записи, в которой можно игнорировать любые обязательные поля - служит как "патч" к уже существующим данным и соответственно возможность выгрузки данных с учетом этих "патчей"
+
+# Типы данных
+Встроенные:
+- bit
+- byte
+- intX, X 4-64
+- int - alias for int32
+- string 
+- object
+- array
+Кастомные: 
+```
+type user
+key int id
+string full_name
+string role 
+int age null
+```
+```
+type configuration
+int port
+string connection_string null
+```
+```
+type application 
+key int64 id
+string name
+user[] users
+configuration configuration null
+```
+Аттрибуты полей кастомных типов
+- string(255 byte) имя поля - ascii
+- bit nullability
+- string название типа
+- byte номер в лейауте в файле 
+
+### Type definition files
+Каждый кастомный тип лежит в отдельном файле в формате csv в `/types`
+первая строка отведена под header : `255 byte type_name`
+поля: `255 byte field_name, bit nullability, 255 byte type_name, byte layout_order_num`
+
+# API
+- create type
+- change type
+- create collection
+- insert to collection
+- patch record
+- (maybe) revoke record
+
+# План капкан
+- [ ] создание "плоских" типов
