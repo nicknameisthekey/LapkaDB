@@ -77,7 +77,7 @@ configuration configuration null
 ### Type definition files
 Каждый кастомный тип лежит в отдельном файле в формате csv в `/types`
 первая строка отведена под header : `255 byte type_name`
-поля: `255 byte field_name, bit nullability, 255 byte type_name, byte layout_order_num`
+поля: `string field_name, string type_name, bit nullability, byte layout_order_num`
 
 # API
 - create type

@@ -1,0 +1,4 @@
+menu
+dish_name,string,0,0
+price,int,0,1
+description,string,1,2
