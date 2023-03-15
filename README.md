@@ -49,43 +49,21 @@ Experimental DB to learn core concepts
 - object
 - array
 Кастомные: 
+```json
+{ 
+    "name": "configuration",
+    "fields":[
+    {
+        "type":"int",
+        "nullable": true,
+        "key":false,
+    }
+  ]
+}
 ```
-type user
-key int id
-string full_name
-string role 
-int age null
-```
-```
-type configuration
-int port
-string connection_string null
-```
-```
-type application 
-key int64 id
-string name
-user[] users
-configuration configuration null
-```
-Аттрибуты полей кастомных типов
-- string(255 byte) имя поля - ascii
-- string название типа
-- bit nullability
-- byte номер в лейауте в файле 
-
-### Type definition files
-Каждый кастомный тип лежит в отдельном файле в формате csv в `/types`
-первая строка отведена под header : `255 byte type_name`
-поля: `string field_name, string type_name, bit nullability, byte layout_order_num`
-
 # API
 - create type
-- change type
 - create collection
 - insert to collection
 - patch record
 - (maybe) revoke record
-
-# План капкан
-- [ ] создание "плоских" типов

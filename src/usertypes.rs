@@ -1,84 +1,55 @@
-pub mod usertypes {
-    use std::{env, fs};
+use serde::{Deserialize, Serialize};
+use serde_json::Result;
+use std::{env, fmt, fs};
 
-    pub struct UserType {
-        name: String,
-        fields: Vec<UserTypeField>,
-    }
-    #[derive(PartialEq, PartialOrd, Debug)]
-    struct UserTypeField {
-        name: String,
-        type_name: String,
-        nullable: bool,
-        layout_pos: u8,
-    }
+#[derive(Serialize, Deserialize)]
+pub struct UserType {
+    pub name: String,
+    pub fields: Vec<UserTypeField>,
+}
 
-    impl UserType {
-        fn from_file_string(file_string: String) -> UserType {
-            let mut lines = file_string.split("\n");
-            let header = lines.next().unwrap();
-            let fields = lines
-                .map(|line| {
-                    let values: Vec<&str> = line.split(',').collect();
-                    return UserTypeField {
-                        name: values[0].to_string(),
-                        type_name: values[1].to_string(),
-                        nullable: values[2].chars().next().unwrap() == '1',
-                        layout_pos: values[3].parse().unwrap(),
-                    };
-                })
-                .collect();
-            return UserType {
-                name: header.to_string(),
-                fields: fields,
-            };
-        }
-    }
+#[derive(PartialEq, PartialOrd, Debug, Serialize, Deserialize)]
+pub struct UserTypeField {
+    pub name: String,
+    pub type_name: String,
+    pub nullable: bool,
+    pub key: bool,
+}
 
-    fn read_files() -> Vec<UserType> {
-        let app_dir = env::var("LAPKA_FILES").unwrap();
-        return fs::read_dir(app_dir)
-            .unwrap()
-            .map(|entry| {
-                let file_text = fs::read_to_string(entry.unwrap().path());
-                return UserType::from_file_string(file_text.unwrap());
-            })
-            .collect();
-    }
+pub fn user_types() -> Vec<UserType> {
+    let app_dir = env::var("LAPKA_FILES").unwrap();
+    return fs::read_dir(format!("{}/types", app_dir))
+        .unwrap()
+        .map(|entry| {
+            let file_text = fs::read_to_string(entry.unwrap().path());
+            return serde_json::from_str(&file_text.unwrap()).unwrap();
+        })
+        .collect();
+}
+
+pub fn by_name(name: String) -> UserType {
+    let types = user_types();
+    types.into_iter().find(|t| t.name == name).unwrap()
+}
+
+pub fn add_user_type(json: String) {
+    let t: UserType = serde_json::from_str(&json).unwrap();
+    let app_dir = env::var("LAPKA_FILES").unwrap();
+    fs::write(format!("{}/types/{}.json", app_dir, &t.name), json).unwrap();
+}
+
+
+mod user_type_tests {
+    use std::env;
+
+    use crate::usertypes::*;
 
     #[test]
-    fn read_type_definition_from_string() {
-        let result =
-            UserType::from_file_string("type_name\nname,string,0,0\nage,int,1,1".to_string());
-
-        assert_eq!(2, result.fields.len());
-        assert!(result.fields.iter().any(|item| {
-            *item
-                == UserTypeField {
-                    name: "name".to_string(),
-                    type_name: "string".to_string(),
-                    nullable: false,
-                    layout_pos: 0,
-                }
-        }));
-
-        assert!(result.fields.iter().any(|item| {
-            *item
-                == UserTypeField {
-                    name: "age".to_string(),
-                    type_name: "int".to_string(),
-                    nullable: true,
-                    layout_pos: 1,
-                }
-        }));
-    }
-    
-    #[test]
-    fn read_type_definition_from_file() {
+    fn read_types_from_files() {
         env::set_var("LAPKA_FILES", "test_dir");
-        let result = read_files();
-        assert_eq!(result.len(), 2);
-        result.iter().for_each(|t| match &t.name[..] {
+        let types = user_types();
+        assert_eq!(1, types.len());
+        types.iter().for_each(|t| match t.name.as_str() {
             "menu" => {
                 assert_eq!(3, t.fields.len());
                 assert!(t.fields.iter().any(|item| {
@@ -87,7 +58,7 @@ pub mod usertypes {
                             name: "dish_name".to_string(),
                             type_name: "string".to_string(),
                             nullable: false,
-                            layout_pos: 0,
+                            key: true,
                         }
                 }));
                 assert!(t.fields.iter().any(|item| {
@@ -96,7 +67,7 @@ pub mod usertypes {
                             name: "price".to_string(),
                             type_name: "int".to_string(),
                             nullable: false,
-                            layout_pos: 1,
+                            key: false,
                         }
                 }));
                 assert!(t.fields.iter().any(|item| {
@@ -105,32 +76,48 @@ pub mod usertypes {
                             name: "description".to_string(),
                             type_name: "string".to_string(),
                             nullable: true,
-                            layout_pos: 2,
+                            key: false,
                         }
                 }));
             }
-            "table" => {
-                assert_eq!(2, t.fields.len());
-                assert!(t.fields.iter().any(|item| {
-                    *item
-                        == UserTypeField {
-                            name: "number".to_string(),
-                            type_name: "int".to_string(),
-                            nullable: false,
-                            layout_pos: 0,
-                        }
-                }));
-                assert!(t.fields.iter().any(|item| {
-                    *item
-                        == UserTypeField {
-                            name: "occupied".to_string(),
-                            type_name: "bit".to_string(),
-                            nullable: false,
-                            layout_pos: 1,
-                        }
-                }));
+            &_ => {
+                assert!(false)
             }
-            &_ => panic!(),
         });
+    }
+
+    #[test]
+    fn add_type_creates_file() {
+        env::set_var("LAPKA_FILES", "test_dir2");
+        add_user_type(
+            r#"{
+            "name": "user",
+            "fields": [
+                {
+                    "name": "username",
+                    "type_name": "string",
+                    "nullable": false,
+                    "key": true
+                }
+            ]
+        }"#
+            .to_string(),
+        );
+
+        let types = user_types();
+        assert_eq!(1, types.len());
+        assert_eq!(1, types[0].fields.len());
+
+        assert_eq!(
+            UserTypeField {
+                name: "username".to_string(),
+                type_name: "string".to_string(),
+                nullable: false,
+                key: true,
+            },
+            types[0].fields[0]
+        );
+
+        fs::remove_file("test_dir2/types/user.json").unwrap();
     }
 }

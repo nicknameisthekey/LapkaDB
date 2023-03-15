@@ -1,0 +1,23 @@
+{
+    "name": "menu",
+    "fields": [
+        {
+            "name": "dish_name",
+            "type_name": "string",
+            "nullable": false,
+            "key": true
+        },
+        {
+            "name": "price",
+            "type_name": "int",
+            "nullable": false,
+            "key": false
+        },
+        {
+            "name": "description",
+            "type_name": "string",
+            "nullable": true,
+            "key": false
+        }
+    ]
+}
