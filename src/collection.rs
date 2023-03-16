@@ -1,6 +1,8 @@
-use std::{env, fs, fmt::format};
+use std::{env, fmt::format, fs};
 
-use crate::usertypes;
+use serde_json::{Number, Value};
+
+use crate::usertypes::{self, user_types};
 
 pub fn new(coll_type: String) {
     let app_dir = env::var("LAPKA_FILES").unwrap();
@@ -8,9 +10,41 @@ pub fn new(coll_type: String) {
     fs::write(format!("{}/collections/{}", app_dir, t.name), "").unwrap();
 }
 
+pub fn insert(coll_type: String, data: String) {
+    let t = usertypes::by_name(coll_type);
+    let jdata: Value = serde_json::from_str(&data).unwrap();
+    let rows_bytes: Vec<Vec<u8>> = t
+        .fields
+        .into_iter()
+        .map(|f| {
+            let field_val = &jdata[&f.name];
+            match f.type_name.as_str() {
+                "int" => int_bytes(&field_val),
+                &_ => panic!("unknown type"),
+            }
+        })
+        .collect();
+    let result: Vec<u8> = rows_bytes.into_iter().flatten().collect();
+    let app_dir = env::var("LAPKA_FILES").unwrap();
+    fs::write(format!("{}/collections/{}", app_dir, t.name), result).unwrap();
+}
+
+fn int_bytes(value: &Value) -> Vec<u8> {
+    let x = match value {
+        Value::Number(n) => n,
+        _ => panic!(),
+    };
+    x.as_u64().unwrap().to_ne_bytes().to_vec()
+}
+
 #[test]
-fn creating_new_collection() {
+fn insert_test() {
     env::set_var("LAPKA_FILES", "test_dir3");
-    new("menu".to_string());
-    let dir_data = fs::read_dir("test_dir3/collections").unwrap();
+    insert(
+        "user".to_string(),
+        r#"{
+            "id": 3
+            }"#
+        .to_string(),
+    );
 }
