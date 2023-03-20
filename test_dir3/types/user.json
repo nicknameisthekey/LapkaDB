@@ -6,6 +6,18 @@
             "type_name": "int",
             "nullable": false,
             "key": true
+        },
+        {
+            "name": "name",
+            "type_name": "string",
+            "nullable": false,
+            "key": false
+        },
+        {
+            "name": "role",
+            "type_name": "string",
+            "nullable": false,
+            "key": false
         }
     ]
 }
